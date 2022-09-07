@@ -1,2 +1,2 @@
-# TCC_SDN_Wi-Fi
+# TCC SDN Wi-Fi
 TCC Concerning SDN on Wi-Fi Networks
