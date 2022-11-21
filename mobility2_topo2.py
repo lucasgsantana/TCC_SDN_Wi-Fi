@@ -1,33 +1,48 @@
 import sys
 
-from mininet.node import Controller
 from mininet.log import setLogLevel, info
-from mn_wifi.node import UserAP
 from mn_wifi.cli import CLI
 from mn_wifi.net import Mininet_wifi
-from mn_wifi.link import wmediumd
-from mn_wifi.wmediumdConnector import interference
+from mininet.node import RemoteController
+from mn_wifi.node import OVSKernelAP
+
+N_hosts = 8
+
+class Host:
+    def __init__(self,name, mac, ip):
+        self.name = name
+        self.mac = mac
+        self.ip = ip
+
+Hosts_Array = []
+
+for i in range (N_hosts):
+    Nsta = i+1
+    NIP = i+2
+    Nmac = i+2
+    CurrentHost = Host('sta' + str(Nsta),'00:00:00:00:00:0' + str(Nmac),'10.0.0.' + str(NIP) + '/8')
+    Hosts_Array.append(CurrentHost)
 
 def topology(args):
-    "Create a network."
-    net = Mininet_wifi(controller = Controller, accessPoint=UserAP, link=wmediumd,
-    wmediumd_mode=interference)
+    info("*** Creating network\n")
+    net = Mininet_wifi(controller = RemoteController,accessPoint=OVSKernelAP)
 
-    info("*** Creating nodes\n")
+    info("*** Adding stations to the topology\n")
+    for i in range (int(N_hosts/2)):
+        net.addStation(Hosts_Array[i].name, mac=Hosts_Array[i].mac, ip=Hosts_Array[i].ip,
+                   min_x=-10, max_x=30, min_y=10, max_y=50, min_v=1, max_v=3,txpower=11,
+                   bgscan_threshold=-60, s_inverval=1, l_interval=3, bgscan_module="simple")
 
-    sta1 = net.addStation('sta1', mac='00:00:00:00:00:01',ip='10.0.0.2/8',
-    min_x=10, max_x=70, min_y=15, max_y=50, min_v=1, max_v=1,
-    bgscan_threshold=-70, s_inverval=2, l_interval=3, bgscan_module="simple")
-    
-    sta2 = net.addStation('sta2', mac='00:00:00:00:00:02',ip='10.0.0.3/8',
-    min_x=10, max_x=25, min_y=20, max_y=40, min_v=1, max_v=1,
-    bgscan_threshold=-60,s_inverval=2, l_interval=3, bgscan_module="simple",)
+    for i in range (int(N_hosts/2+1), int(N_hosts)):
+        net.addStation(Hosts_Array[i].name, mac=Hosts_Array[i].mac, ip=Hosts_Array[i].ip,
+                   min_x=0, max_x=70, min_y=10, max_y=50, min_v=1, max_v=1,txpower=11,
+                   bgscan_threshold=-60, s_inverval=1, l_interval=3, bgscan_module="simple")
 
-    ap1 = net.addAccessPoint('ap1', ssid='handover', channel='1',
-    position='15,30,0',passwd='123456789a',mode='g',encrypt='wpa2')
-    ap2 = net.addAccessPoint('ap2', ssid='handover', channel='6', 
-    position='55,30,0',passwd='123456789a',mode='g',encrypt='wpa2')
-    c1 = net.addController('c1')
+    info("*** Adding 2 APs and controllers\n")
+
+    ap1 = net.addAccessPoint('ap1', ssid='handover', channel='1',mode='n2',passwd='123456789a', position='15,30,0',txpower=18,encrypt='wpa2')
+    ap2 = net.addAccessPoint('ap2', ssid='handover', channel='6',mode='n2',passwd='123456789a', position='60,30,0',txpower=18,encrypt='wpa2')
+    c1 = net.addController('c1', controller=RemoteController)
 
     net.setPropagationModel(model="logDistance", exp=5)
 
